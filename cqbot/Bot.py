@@ -39,7 +39,8 @@ class Bot(object):
         self.nickname = self_data["nickname"]
         self.qid = self_data["tiny_id"]
         self.not_found_command_message = not_found_command_message
-        self.events[BotChannelGetMessageEvent] = []
+        for obj in Types:
+            self.events[obj] = []
 
     def on_message(self, c: WebSocketApp, data: str):
         """
@@ -52,33 +53,56 @@ class Bot(object):
         d = loads(data)
         if d["post_type"] == "message":
             if d["message_type"] == "guild":
-                # 频道消息处理部分
-                cid = d["channel_id"]
-                gid = d["guild_id"]
-                user = new_User(d['sender'])
-                message = d["message"]
-                mw = ChannelMessageWithoutCommand(user, cid, gid, message)
-                event = self.events[BotChannelGetMessageEvent]
-                e = EventType(BotChannelGetMessageEvent.args)
-                e.set("message", mw)
-                for i in event:
-                    i.handler(e)
-                if f"[CQ:at,qq={self.qid}]" in message:
-                    message = message.replace(f"[CQ:at,qq={self.qid}] ", "")
-                    try:
-                        m = ChannelMessage(user, cid, gid, message)
-                    except ParseCommandError:
-                        mw.Reply(self.not_found_command_message)
-                        return
-                    command = m.getCommand()
-                    if command not in self.commands:
-                        m.Reply(self.not_found_command_message)
-                    else:
-                        is_success = self.commands[command].execute(m)
-                        if not is_success:
-                            m.Reply(self.failed_run_message)
+                if d["sub_type"] == "channel":
+                    # 频道消息处理部分
+                    cid = d["channel_id"]  # 获取频道ID
+                    gid = d["guild_id"]  # 获取子频道的ID
+                    user = new_User(d['sender'])  # 获取消息发送者
+                    message = d["message"]  # 获取消息
+                    mw = ChannelMessageWithoutCommand(user, cid, gid, message)  # 创建消息对象
+                    event = self.events[BotChannelGetMessageEvent]  # 获取已注册的event
+                    e = EventType(BotChannelGetMessageEvent.args,
+                                  BotGroupGetMessageEvent.name)  # BotChannelGetMessageEvent
+                    e.set("message", mw)  # 设置参数
+                    for i in event:  # 运行event
+                        result = i.handler(e)
+                        if not result:
+                            print("执行BotChannelGetMessageEvent出现错误")
+                    if f"[CQ:at,qq={self.qid}]" in message:
+                        message = message.replace(f"[CQ:at,qq={self.qid}] ", "")
+                        try:
+                            m = ChannelMessage(user, cid, gid, message)
+                        except ParseCommandError:
+                            mw.Reply(self.not_found_command_message)
+                            return
+                        command = m.getCommand()
+                        if command not in self.commands:
+                            m.Reply(self.not_found_command_message)
+                        else:
+                            is_success = self.commands[command].execute(m)
+                            if not is_success:
+                                m.Reply(self.failed_run_message)
             elif d["message_type"] == "group":
                 # 群消息处理部分
+                pass
+        elif d["post_type"] == "notice":
+            notice_type = d["notice_type"]
+            if notice_type == "message_reactions_updated":
+                # 频道消息表情贴更新
+                event = self.events[BotChannelMessageReactionsUpdatedEvent]
+                d_ = d
+                d_['current_reactions'] = getReactionInfo(d_['current_reactions'])
+                e = getEvent(BotChannelMessageReactionsUpdatedEvent, d_)
+                for i in event:
+                    i.handler(e)
+            elif notice_type == "channel_updated":
+                # 子频道消息更新
+                pass
+            elif notice_type == "channel_created":
+                # 子频道创建
+                pass
+            elif notice_type == "channel_destroyed":
+                # 子频道删除
                 pass
 
     def register_new_command(self, c: Command, e: CommandExecutor) -> bool:
