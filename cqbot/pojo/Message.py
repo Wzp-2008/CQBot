@@ -9,7 +9,7 @@ def is_command(content: str) -> bool:
     """
     IS THIS MESSAGE IS A COMMAND?
     :param content: THE TEXT CONTENT OF MESSAGE
-    :return: A BOOL OF THIS MESSAGE HAVE /
+    :return: A BOOL OF THIS MESSAGE HAVE
     """
     return "/" in content
 
