@@ -61,9 +61,7 @@ class Bot(object):
                     message = d["message"]  # 获取消息
                     mw = ChannelMessageWithoutCommand(user, cid, gid, message)  # 创建消息对象
                     event = self.events[BotChannelGetMessageEvent]  # 获取已注册的event
-                    e = EventType(BotChannelGetMessageEvent.args,
-                                  BotGroupGetMessageEvent.name)  # BotChannelGetMessageEvent
-                    e.set("message", mw)  # 设置参数
+                    e = getEvent(BotChannelGetMessageEvent, {"message": mw})
                     for i in event:  # 运行event
                         result = i.handler(e)
                         if not result:
@@ -96,6 +94,10 @@ class Bot(object):
                 for i in event:
                     i.handler(e)
             elif notice_type == "channel_updated":
+                event = self.events[BotChannelUpdatedEvent]
+                e = getEvent(BotChannelUpdatedEvent, d)
+                for i in event:
+                    i.handler(e)
                 # 子频道消息更新
                 pass
             elif notice_type == "channel_created":

@@ -45,7 +45,7 @@ class EventType(object):
         return hash((self.args, self.name))
 
 
-def getEvent(e_types: EventType, args: Dict[str, str]) -> EventType:
+def getEvent(e_types: EventType, args: Dict) -> EventType:
     event = EventType(e_types.args, e_types.name)
     for i in args.keys():
         event.set(i, args[i])
@@ -58,8 +58,14 @@ BotChannelMessageReactionsUpdatedEvent = EventType(
     ["guild_id", "channel_id", "user_id", "message_id", "current_reactions"],
     "BotChannelMessageReactionsUpdatedEvent"
 )
+BotChannelUpdatedEvent = EventType(
+    ["guild_id", "channel_id", "user_id", "operator_id", "old_info", "new_info"],
+    "BotChannelUpdatedEvent"
+)
 Types = [
     BotChannelGetMessageEvent,
     BotGroupGetMessageEvent,
     BotChannelMessageReactionsUpdatedEvent,
+    BotChannelUpdatedEvent,
+
 ]
