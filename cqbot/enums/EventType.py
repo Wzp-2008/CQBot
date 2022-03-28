@@ -38,12 +38,6 @@ class EventType(object):
         """
         self.args_with_content[key] = value
 
-    def __eq__(self, other):
-        return self.args == other.args and self.name == other.name
-
-    def __hash__(self):
-        return hash((self.args, self.name))
-
 
 def getEvent(e_types: EventType, args: Dict) -> EventType:
     event = EventType(e_types.args, e_types.name)

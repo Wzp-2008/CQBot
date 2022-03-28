@@ -38,6 +38,8 @@ class Bot(object):
         self_data = post(http_url + "get_guild_service_profile").json()["data"]
         self.nickname = self_data["nickname"]
         self.qid = self_data["tiny_id"]
+        self_data = post(http_url + "get_login_info").json()["data"]
+        self.uid = self_data["user_id"]
         self.not_found_command_message = not_found_command_message
         for obj in Types:
             self.events[obj] = []
@@ -82,7 +84,33 @@ class Bot(object):
                                 m.Reply(self.failed_run_message)
             elif d["message_type"] == "group":
                 # 群消息处理部分
-                pass
+                if d["sub_type"] == "normal":
+                    user = new_User(d['sender'])  # 获取消息发送者
+                    message = d["raw_message"]
+                    mw = GroupMessageWithoutCommand(d["time"], d["self_id"], d["message_id"], d["group_id"],
+                                                    d["user_id"],
+                                                    message, d["font"], user)
+                    event = self.events[BotGroupGetMessageEvent]
+                    e = getEvent(BotGroupGetMessageEvent, {"message": mw})
+                    for i in event:  # 运行event
+                        result = i.handler(e)
+                        if not result:
+                            print(f"执行BotGroupMessageEvent出现错误")
+                    if f"[CQ:at,qq={self.uid}]" in message:
+                        message = message.replace(f"[CQ:at,qq={self.uid}] ", "")
+                        try:
+                            m = GroupMessage(d["time"], d["self_id"], d["message_id"], d["group_id"], d["user_id"],
+                                             message, d["font"], user)
+                        except ParseCommandError:
+                            mw.Reply(self.not_found_command_message)
+                            return
+                        command = m.getCommand()
+                        if command not in self.commands:
+                            m.Reply(self.not_found_command_message)
+                        else:
+                            is_success = self.commands[command].execute(m)
+                            if not is_success:
+                                m.Reply(self.failed_run_message)
         elif d["post_type"] == "notice":
             notice_type = d["notice_type"]
             if notice_type == "message_reactions_updated":
