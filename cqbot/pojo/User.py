@@ -11,7 +11,7 @@ class User:
         get the cq code of at sb
         :return: a string with cq code
         """
-        return f"[CQ:at,qq={self.user_id}] "
+        return f"[CQ:at,qq={self.user_id}]"
 
 
 def new_User(dictionary: dict) -> User:
